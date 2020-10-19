@@ -34,6 +34,10 @@ type User struct {
 	DeviceID       string    `json:"device_id"`
 }
 
+const (
+	frontEndOrigin string = "*"
+)
+
 var (
 	signingKey        = []byte(os.Getenv("SIGNING_KEY"))
 	refreshSigningKey = []byte(os.Getenv("REFRESH_SIGNING_KEY"))
@@ -102,6 +106,10 @@ func BasicToken(next http.Handler) http.Handler {
 			accessToken := strings.Split(r.Header["Authorization"][0], " ")[1]
 			basic_token := os.Getenv("BASIC_TOKEN")
 			if basic_token == accessToken {
+
+				//Allow CORS here By * or specific origin
+				w.Header().Set("Access-Control-Allow-Origin", frontEndOrigin)
+				w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 				next.ServeHTTP(w, r)
 				return
 			} else {
