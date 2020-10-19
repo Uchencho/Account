@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/Uchencho/Account/server"
+
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 )
@@ -28,12 +29,11 @@ func main() {
 		if err := server.Client.Disconnect(ctx); err != nil {
 			log.Fatalln("Error in disconnecting", err)
 		}
-		log.Println("Disconnected successfully")
 	}()
 
 	router := mux.NewRouter()
 
-	router.HandleFunc("/api/register", server.Register)
+	router.Handle("/api/register", server.BasicToken(http.HandlerFunc(server.Register)))
 
 	if err := http.ListenAndServe(defaultServerAddress, router); err != http.ErrServerClosed {
 		log.Println(err)

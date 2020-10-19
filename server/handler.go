@@ -14,14 +14,11 @@ import (
 )
 
 func Register(w http.ResponseWriter, req *http.Request) {
-
-	w.Header().Set("Content-Type", "application/json")
 	switch req.Method {
 	case http.MethodPost:
 
 		var (
 			userPayload RegisterUser
-			user        User
 			err         error
 		)
 
@@ -31,7 +28,7 @@ func Register(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		err, aboveOneField := ValidateInput(userPayload)
+		err, aboveOneField := validateInput(userPayload)
 		if aboveOneField {
 			w.WriteHeader(http.StatusBadRequest)
 			fmt.Fprint(w, `{"error" : "Invalid Payload"}`)
@@ -42,18 +39,21 @@ func Register(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		user.Email = userPayload.Email
-		user.DateJoined = time.Now()
-		user.LastLogin = time.Now()
+		user := User{
+			Email:      userPayload.Email,
+			DateJoined: time.Now(),
+			LastLogin:  time.Now(),
+			IsActive:   true,
+			FirstName:  userPayload.FirstName,
+		}
 		user.HashedPassword, err = HashPassword(userPayload.Password)
 		if err != nil {
 			InternalIssues(w)
 			return
 		}
 
-		err = AddUser(Client, user)
+		err = addUser(Client, user)
 		if err != nil {
-			log.Printf("Error occured in adding details to db, %v", err)
 			w.WriteHeader(http.StatusBadRequest)
 			fmt.Fprint(w, `{"error" : "User already exists, please login"}`)
 			return
@@ -66,7 +66,6 @@ func Register(w http.ResponseWriter, req *http.Request) {
 		}
 
 		logRes := loginResponse{
-			ID:           user.ID,
 			Email:        user.Email,
 			FirstName:    user.FirstName,
 			IsActive:     user.IsActive,
@@ -93,7 +92,7 @@ func Register(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func AddUser(client *mongo.Client, userDetails User) error {
+func addUser(client *mongo.Client, userDetails User) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -105,6 +104,7 @@ func AddUser(client *mongo.Client, userDetails User) error {
 	filter := bson.M{"email": userDetails.Email}
 	err := collection.FindOne(ctx, filter).Decode(&duplicateUser)
 	if err != nil {
+		// User does not exist
 		_, err = collection.InsertOne(ctx, userDetails)
 		if err != nil {
 			log.Println("Error in inserting item with error, ", err)

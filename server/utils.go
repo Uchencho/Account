@@ -16,7 +16,6 @@ var (
 )
 
 type loginResponse struct {
-	ID           uint      `json:"_id,omitempty"`
 	Email        string    `json:"email"`
 	FirstName    string    `json:"first_name"`
 	PhoneNumber  string    `json:"phone_number"`
@@ -55,7 +54,7 @@ func InternalIssues(w http.ResponseWriter) {
 }
 
 // Validates a struct
-func ValidateInput(object interface{}) (error, bool) {
+func validateInput(object interface{}) (error, bool) {
 
 	err := validate.Struct(object)
 	if err != nil {

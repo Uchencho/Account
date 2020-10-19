@@ -10,7 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
-func ConnectDB() *mongo.Client {
+func connectDB() *mongo.Client {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -28,4 +28,4 @@ func ConnectDB() *mongo.Client {
 	return client
 }
 
-var Client = ConnectDB()
+var Client = connectDB()

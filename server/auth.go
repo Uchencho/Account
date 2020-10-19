@@ -2,7 +2,10 @@ package server
 
 import (
 	"errors"
+	"fmt"
+	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -14,10 +17,10 @@ type RegisterUser struct {
 	Password        string `json:"password" validate:"required"`
 	ConfirmPassword string `json:"confirm_password" validate:"eqfield=Password"`
 	DeviceID        string `json:"device_id,omitempty"`
+	FirstName       string `json:"first_name"`
 }
 
 type User struct {
-	ID             uint      `json:"id"`
 	Email          string    `json:"email"`
 	HashedPassword string    `json:"password"`
 	FirstName      string    `json:"first_name"`
@@ -76,4 +79,32 @@ func GenerateToken(email string) (string, string, error) {
 		return "", "", err
 	}
 	return accessToken, refreshString, nil
+}
+
+// Middleware that checks if a token was passed
+func BasicToken(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		if r.Header["Authorization"] != nil {
+			if len(strings.Split(r.Header["Authorization"][0], " ")) < 2 {
+				w.WriteHeader(http.StatusForbidden)
+				fmt.Fprint(w, `{"error" : "Invalid token format"}`)
+				return
+			}
+
+			accessToken := strings.Split(r.Header["Authorization"][0], " ")[1]
+			basic_token := os.Getenv("BASIC_TOKEN")
+			if basic_token == accessToken {
+				next.ServeHTTP(w, r)
+				return
+			} else {
+				w.WriteHeader(http.StatusForbidden)
+				fmt.Fprint(w, `{"error" : "Invalid token passed"}`)
+				return
+			}
+		}
+		w.WriteHeader(http.StatusForbidden)
+		fmt.Fprint(w, `{"error" : "Token not passed"}`)
+	})
 }
