@@ -1,0 +1,6 @@
+Account service for everything related to the account of a user
+Key features
+- Mongodb NOSQL database
+- Gorrila Mux for routing
+- HttpRouter for routing also but faster
+- Unit test and End to End to tests
