@@ -18,6 +18,12 @@ type loginInfo struct {
 	Password string `json:"password" validate:"required"`
 }
 
+func NotAvailable(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusNotFound)
+	fmt.Fprint(w, `{"error" : "Resource not found"}`)
+}
+
 func Register(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodPost:

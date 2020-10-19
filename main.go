@@ -32,6 +32,7 @@ func main() {
 	}()
 
 	router := mux.NewRouter()
+	router.NotFoundHandler = server.BasicToken(http.HandlerFunc(server.NotAvailable))
 
 	router.Handle("/api/register", server.BasicToken(http.HandlerFunc(server.Register)))
 	router.Handle("/api/login", server.BasicToken(http.HandlerFunc(server.Login)))
