@@ -4,3 +4,8 @@ Key features
 - Gorrila Mux for routing
 - HttpRouter for routing also but faster
 - Unit test and End to End to tests
+
+Registeration, which will return a jwt token
+Login, which will return a token and update the last login field
+Ability to update a user's profile
+Ability to delete profile (just to learn how to do that with Mongodb)
