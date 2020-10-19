@@ -40,7 +40,7 @@ func InvalidJsonResp(w http.ResponseWriter, err error) {
 	}
 	log.Printf("error in decoding json: %v", err)
 	w.WriteHeader(http.StatusBadRequest)
-	fmt.Fprintf(w, `{"error" : %s}`, err.Error())
+	fmt.Fprintf(w, `{"error" : "%s"}`, err.Error())
 }
 
 func MethodNotAllowedResponse(w http.ResponseWriter) {
@@ -85,7 +85,7 @@ func validateInput(object interface{}) (error, bool) {
 			case "required":
 				return fmt.Errorf("%s is required", name), false
 			case "email":
-				return fmt.Errorf("%s should be a valid email", name), false
+				return fmt.Errorf("%s should be a valid email address", name), false
 			case "eqfield":
 				return fmt.Errorf("%s should be the same as %s", name, err.Param()), false
 			default:

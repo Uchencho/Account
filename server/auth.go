@@ -48,6 +48,12 @@ func HashPassword(password string) (string, error) {
 	return string(bytes), err
 }
 
+// Checks the password and the hash, returns a non nil error if not the same
+func CheckPasswordHash(password, hash string) error {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return err
+}
+
 // Generates an acess and refresh token on authentication
 func GenerateToken(email string) (string, string, error) {
 

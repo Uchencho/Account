@@ -34,6 +34,7 @@ func main() {
 	router := mux.NewRouter()
 
 	router.Handle("/api/register", server.BasicToken(http.HandlerFunc(server.Register)))
+	router.Handle("/api/login", server.BasicToken(http.HandlerFunc(server.Login)))
 
 	if err := http.ListenAndServe(defaultServerAddress, router); err != http.ErrServerClosed {
 		log.Println(err)
