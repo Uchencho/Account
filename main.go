@@ -2,15 +2,19 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	"github.com/Uchencho/Account/server"
+	"github.com/joho/godotenv"
 )
 
-func main() {
+func init() {
+	if err := godotenv.Load(); err != nil {
+		log.Fatalf("No .env file found, with error: %s", err)
+	}
+}
 
-	fmt.Println("It starts here")
+func main() {
 
 	defer func() {
 		ctx := context.Background()
@@ -19,7 +23,4 @@ func main() {
 		}
 		log.Println("Disconnected successfully")
 	}()
-	fmt.Println("It connected")
-
-	fmt.Println("When will this be called?")
 }
