@@ -107,7 +107,7 @@ func BasicToken(next http.Handler) http.Handler {
 			basic_token := os.Getenv("BASIC_TOKEN")
 			if basic_token == accessToken {
 
-				//Allow CORS here By * or specific origin
+				//Allow CORS here
 				w.Header().Set("Access-Control-Allow-Origin", frontEndOrigin)
 				w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 				next.ServeHTTP(w, r)
