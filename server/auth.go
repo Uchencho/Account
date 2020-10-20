@@ -78,7 +78,7 @@ func GenerateToken(email string) (string, string, error) {
 
 	claims["authorized"] = true
 	claims["client"] = email
-	claims["exp"] = time.Now().Add(time.Hour * 15).Unix()
+	claims["exp"] = time.Now().Add(time.Minute * 15).Unix()
 
 	accessToken, err := token.SignedString(signingKey)
 	if err != nil {

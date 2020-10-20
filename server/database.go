@@ -10,6 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
+// Connect to a local db instance
 func connectDB() *mongo.Client {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
