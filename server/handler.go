@@ -155,6 +155,8 @@ func Login(w http.ResponseWriter, req *http.Request) {
 			IsActive:     user.IsActive,
 			DateJoined:   user.DateJoined,
 			LastLogin:    user.LastLogin,
+			UserAddress:  user.UserAddress,
+			PhoneNumber:  user.PhoneNumber,
 			AccessToken:  accessToken,
 			RefreshToken: refreshToken,
 		}
