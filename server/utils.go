@@ -32,27 +32,30 @@ type SuccessResponse struct {
 	Data    interface{} `json:"data"`
 }
 
+// Helper function for invalid json responses
 func InvalidJsonResp(w http.ResponseWriter, err error) {
 	if err.Error() == "EOF" {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprint(w, `{"error" : "Invalid Payload"}`)
 		return
 	}
-	log.Printf("error in decoding json: %v", err)
 	w.WriteHeader(http.StatusBadRequest)
 	fmt.Fprintf(w, `{"error" : "%s"}`, err.Error())
 }
 
+// Helper function for invalid methods
 func MethodNotAllowedResponse(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusMethodNotAllowed)
 	fmt.Fprint(w, `{"message" : "Method Not allowed"}`)
 }
 
+// Helper function for internal server error
 func InternalIssues(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusInternalServerError)
 	fmt.Fprint(w, `{"error" : "Something went wrong"}`)
 }
 
+// Helper function for unauthenticated responses
 func unauthorizedResponse(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusForbidden)
 	fmt.Fprint(w, `{"error" : "Invalid authentication credentials"}`)

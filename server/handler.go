@@ -18,6 +18,7 @@ type loginInfo struct {
 	Password string `json:"password" validate:"required"`
 }
 
+// Endpoint for formatting invalid url requests
 func NotAvailable(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusNotFound)
@@ -397,6 +398,7 @@ func getUser(client *mongo.Client, email string) (User, error) {
 	return userDetails, nil
 }
 
+// update details of a user
 func updateUser(client *mongo.Client, user User) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
