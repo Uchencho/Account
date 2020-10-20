@@ -46,6 +46,11 @@ var (
 
 type Key string
 
+type tokenDetails struct {
+	RefreshToken string `json:"refresh_token,omitempty" validate:"required"`
+	AccessToken  string `json:"access_token,omitempty"`
+}
+
 // Hashes a password
 func HashPassword(password string) (string, error) {
 	if len(password) < 1 {
@@ -143,6 +148,41 @@ func checkAccessToken(accessToken string) (interface{}, error) {
 		return claims["client"], nil
 	}
 	return "", errors.New("Credentials not provided")
+}
+
+// Checks if the refresh token passed is correct
+func checkRefreshToken(refreshToken string) (interface{}, error) {
+	token, err := jwt.Parse(refreshToken, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("An error occurred")
+		}
+		return refreshSigningKey, nil
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		return claims["client"], nil
+	}
+	return "", errors.New("Credentials not provided")
+}
+
+// Creates a new access token only
+func newAccessToken(email string) (string, error) {
+	token := jwt.New(jwt.SigningMethodHS256)
+	claims := token.Claims.(jwt.MapClaims)
+
+	claims["authorized"] = true
+	claims["client"] = email
+	claims["exp"] = time.Now().Add(time.Hour * 2).Unix()
+
+	accessToken, err := token.SignedString(signingKey)
+	if err != nil {
+		return "", err
+	}
+	return accessToken, nil
 }
 
 // Middleware that returns the details of the user

@@ -38,10 +38,13 @@ func main() {
 	router.Handle("/api/register", server.BasicToken(http.HandlerFunc(server.Register)))
 	router.Handle("/api/login", server.BasicToken(http.HandlerFunc(server.Login)))
 	router.Handle("/api/profile", server.TheUser(http.HandlerFunc(server.UserProfile)))
+	router.HandleFunc("/api/refresh-token", server.RefreshTokenAPI)
 
-	// // Using HttpRouter as a router
+	// // Using HttpRouter as a router(https://github.com/julienschmidt/httprouter)
 	// /*
 	// 	Current challenge with this router is the fact that you must specify the method coming in
+	//  This means I am unable to handle different methods in the handler, rather would have to repeat
+	//  myself
 	// */
 	// router := httprouter.New()
 	// router.Handler("POST", "/api/register", server.BasicToken(http.HandlerFunc(server.Register)))

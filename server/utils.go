@@ -53,6 +53,11 @@ func InternalIssues(w http.ResponseWriter) {
 	fmt.Fprint(w, `{"error" : "Something went wrong"}`)
 }
 
+func unauthorizedResponse(w http.ResponseWriter) {
+	w.WriteHeader(http.StatusForbidden)
+	fmt.Fprint(w, `{"error" : "Invalid authentication credentials"}`)
+}
+
 // Validates a struct
 func validateInput(object interface{}) (error, bool) {
 

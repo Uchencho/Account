@@ -175,7 +175,7 @@ func Login(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// Retrieve, Update and Delete User Profile
+// Endpoint to Retrieve, Update and Delete User Profile
 func UserProfile(w http.ResponseWriter, req *http.Request) {
 	const userKey Key = "user"
 	user, ok := req.Context().Value(userKey).(User)
@@ -235,7 +235,7 @@ func UserProfile(w http.ResponseWriter, req *http.Request) {
 			incomingPayload.UserAddress = user.UserAddress
 		}
 
-		err = UpdateUser(Client, incomingPayload)
+		err = updateUser(Client, incomingPayload)
 		if err != nil {
 			InternalIssues(w)
 			return
@@ -269,7 +269,7 @@ func UserProfile(w http.ResponseWriter, req *http.Request) {
 		incomingPayload.DateJoined = user.DateJoined
 		incomingPayload.LastLogin = user.LastLogin
 
-		err = UpdateUser(Client, incomingPayload)
+		err = updateUser(Client, incomingPayload)
 		if err != nil {
 			InternalIssues(w)
 			return
@@ -290,6 +290,64 @@ func UserProfile(w http.ResponseWriter, req *http.Request) {
 
 	default:
 		MethodNotAllowedResponse(w)
+	}
+}
+
+// Endpoint to refresh expired access token
+func RefreshTokenAPI(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	// Set CORS Headers since no middleware attached
+	w.Header().Set("Access-Control-Allow-Origin", frontEndOrigin)
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+	switch req.Method {
+	case http.MethodPost:
+		var refreshToken tokenDetails
+		err := json.NewDecoder(req.Body).Decode(&refreshToken)
+		if err != nil {
+			InvalidJsonResp(w, err)
+			return
+		}
+		err, _ = validateInput(refreshToken)
+		if err != nil {
+			InvalidJsonResp(w, err)
+			return
+		}
+
+		email, err := checkRefreshToken(refreshToken.RefreshToken)
+		if err != nil && "Token is expired" == err.Error() {
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprint(w, `{"error" : "Token has expired, please login"}`)
+			return
+		} else if err != nil {
+			unauthorizedResponse(w)
+			return
+		}
+
+		accessToken, err := newAccessToken(fmt.Sprint(email))
+		if err != nil {
+			InternalIssues(w)
+			return
+		}
+
+		data := tokenDetails{AccessToken: accessToken}
+		resp := SuccessResponse{
+			Message: "success",
+			Data:    data,
+		}
+
+		jsonResp, err := json.Marshal(resp)
+		if err != nil {
+			InternalIssues(w)
+			return
+		}
+		fmt.Fprint(w, string(jsonResp))
+		return
+
+	default:
+		MethodNotAllowedResponse(w)
+		return
 	}
 }
 
@@ -339,7 +397,7 @@ func getUser(client *mongo.Client, email string) (User, error) {
 	return userDetails, nil
 }
 
-func UpdateUser(client *mongo.Client, user User) error {
+func updateUser(client *mongo.Client, user User) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
