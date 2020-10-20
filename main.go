@@ -7,8 +7,8 @@ import (
 
 	"github.com/Uchencho/Account/server"
 
+	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
-	"github.com/julienschmidt/httprouter"
 )
 
 const (
@@ -31,18 +31,23 @@ func main() {
 		}
 	}()
 
-	// // Using Gorilla Mux as a router
-	// router := mux.NewRouter()
-	// router.NotFoundHandler = server.BasicToken(http.HandlerFunc(server.NotAvailable))
+	// Using Gorilla Mux as a router
+	router := mux.NewRouter()
+	router.NotFoundHandler = server.BasicToken(http.HandlerFunc(server.NotAvailable))
 
-	// router.Handle("/api/register", server.BasicToken(http.HandlerFunc(server.Register)))
-	// router.Handle("/api/login", server.BasicToken(http.HandlerFunc(server.Login)))
+	router.Handle("/api/register", server.BasicToken(http.HandlerFunc(server.Register)))
+	router.Handle("/api/login", server.BasicToken(http.HandlerFunc(server.Login)))
+	router.Handle("/api/profile", server.TheUser(http.HandlerFunc(server.UserProfile)))
 
-	// Using HttpRouter as a router
-	router := httprouter.New()
-	router.Handler("POST", "/api/register", server.BasicToken(http.HandlerFunc(server.Register)))
-	router.Handler("POST", "/api/login", server.BasicToken(http.HandlerFunc(server.Login)))
-	router.NotFound = server.BasicToken(http.HandlerFunc(server.NotAvailable))
+	// // Using HttpRouter as a router
+	// /*
+	// 	Current challenge with this router is the fact that you must specify the method coming in
+	// */
+	// router := httprouter.New()
+	// router.Handler("POST", "/api/register", server.BasicToken(http.HandlerFunc(server.Register)))
+	// router.Handler("POST", "/api/login", server.BasicToken(http.HandlerFunc(server.Login)))
+	// router.Handler("GET", "/api/profile", server.TheUser(http.HandlerFunc(server.UserProfile)))
+	// router.NotFound = server.BasicToken(http.HandlerFunc(server.NotAvailable))
 
 	if err := http.ListenAndServe(defaultServerAddress, router); err != http.ErrServerClosed {
 		log.Println(err)

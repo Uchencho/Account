@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -22,7 +23,7 @@ type RegisterUser struct {
 
 type User struct {
 	Email          string    `json:"email"`
-	HashedPassword string    `json:"password"`
+	HashedPassword string    `json:"password,omitempty"`
 	FirstName      string    `json:"first_name"`
 	PhoneNumber    string    `json:"phone_number"`
 	UserAddress    string    `json:"user_address"`
@@ -42,6 +43,8 @@ var (
 	signingKey        = []byte(os.Getenv("SIGNING_KEY"))
 	refreshSigningKey = []byte(os.Getenv("REFRESH_SIGNING_KEY"))
 )
+
+type Key string
 
 // Hashes a password
 func HashPassword(password string) (string, error) {
@@ -70,7 +73,7 @@ func GenerateToken(email string) (string, string, error) {
 
 	claims["authorized"] = true
 	claims["client"] = email
-	claims["exp"] = time.Now().Add(time.Minute * 15).Unix()
+	claims["exp"] = time.Now().Add(time.Hour * 15).Unix()
 
 	accessToken, err := token.SignedString(signingKey)
 	if err != nil {
@@ -117,6 +120,70 @@ func BasicToken(next http.Handler) http.Handler {
 				fmt.Fprint(w, `{"error" : "Invalid token passed"}`)
 				return
 			}
+		}
+		w.WriteHeader(http.StatusForbidden)
+		fmt.Fprint(w, `{"error" : "Token not passed"}`)
+	})
+}
+
+// Checks if the accesstoken passed is correct
+func checkAccessToken(accessToken string) (interface{}, error) {
+	token, err := jwt.Parse(accessToken, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("An error occurred")
+		}
+		return signingKey, nil
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		return claims["client"], nil
+	}
+	return "", errors.New("Credentials not provided")
+}
+
+// Middleware that returns the details of the user
+func TheUser(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		if r.Header["Authorization"] != nil {
+			if len(strings.Split(r.Header["Authorization"][0], " ")) < 2 {
+				w.WriteHeader(http.StatusForbidden)
+				fmt.Fprint(w, `{"error" : "Invalid token format"}`)
+				return
+			}
+
+			accessToken := strings.Split(r.Header["Authorization"][0], " ")[1]
+			email, err := checkAccessToken(accessToken)
+			if err != nil && "Token is expired" == err.Error() {
+				w.WriteHeader(http.StatusUnauthorized)
+				fmt.Fprint(w, `{"error" : "Token has expired, please login"}`)
+				return
+			} else if err != nil {
+				w.WriteHeader(http.StatusUnauthorized)
+				fmt.Fprint(w, `{"error" : "Invalid Token"}`)
+				return
+			}
+
+			user, err := getUser(Client, fmt.Sprint(email))
+			if err != nil {
+				w.WriteHeader(http.StatusUnauthorized)
+				fmt.Fprint(w, `{"error" : "User does not exist"}`)
+				return
+			}
+
+			const userKey Key = "user"
+			ctx := context.WithValue(r.Context(), userKey, user)
+
+			//Allow CORS here
+			w.Header().Set("Access-Control-Allow-Origin", frontEndOrigin)
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+			next.ServeHTTP(w, r.WithContext(ctx))
+			return
 		}
 		w.WriteHeader(http.StatusForbidden)
 		fmt.Fprint(w, `{"error" : "Token not passed"}`)

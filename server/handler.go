@@ -24,6 +24,7 @@ func NotAvailable(w http.ResponseWriter, req *http.Request) {
 	fmt.Fprint(w, `{"error" : "Resource not found"}`)
 }
 
+// Endpoint for registering a user
 func Register(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodPost:
@@ -103,6 +104,7 @@ func Register(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+// Endpoint for logging in a User
 func Login(w http.ResponseWriter, req *http.Request) {
 
 	switch req.Method {
@@ -162,6 +164,7 @@ func Login(w http.ResponseWriter, req *http.Request) {
 		jsonResp, err := json.Marshal(successResp)
 		if err != nil {
 			InternalIssues(w)
+			return
 		}
 
 		fmt.Fprint(w, string(jsonResp))
@@ -172,6 +175,125 @@ func Login(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+// Retrieve, Update and Delete User Profile
+func UserProfile(w http.ResponseWriter, req *http.Request) {
+	const userKey Key = "user"
+	user, ok := req.Context().Value(userKey).(User)
+	if !ok {
+		InternalIssues(w)
+		return
+	}
+
+	switch req.Method {
+	case http.MethodGet:
+		user.HashedPassword = ""
+		successResp := SuccessResponse{
+			Message: "success",
+			Data:    user,
+		}
+		jsonResp, err := json.Marshal(successResp)
+		if err != nil {
+			InternalIssues(w)
+			return
+		}
+
+		fmt.Fprint(w, string(jsonResp))
+		return
+
+	case http.MethodPatch:
+
+		var incomingPayload User
+		err := json.NewDecoder(req.Body).Decode(&incomingPayload)
+		if err != nil {
+			InvalidJsonResp(w, err)
+			return
+		}
+
+		incomingPayload.Email = user.Email
+		incomingPayload.HashedPassword = user.HashedPassword
+		incomingPayload.IsActive = true
+		incomingPayload.DateJoined = user.DateJoined
+		incomingPayload.LastLogin = user.LastLogin
+
+		if incomingPayload.DeviceID == "" {
+			incomingPayload.DeviceID = user.DeviceID
+		}
+
+		if incomingPayload.FirstName == "" {
+			incomingPayload.FirstName = user.FirstName
+		}
+		if incomingPayload.Latitude == "" {
+			incomingPayload.Latitude = user.Latitude
+		}
+		if incomingPayload.Longitude == "" {
+			incomingPayload.Longitude = user.Longitude
+		}
+		if incomingPayload.PhoneNumber == "" {
+			incomingPayload.PhoneNumber = user.PhoneNumber
+		}
+		if incomingPayload.UserAddress == "" {
+			incomingPayload.UserAddress = user.UserAddress
+		}
+
+		err = UpdateUser(Client, incomingPayload)
+		if err != nil {
+			InternalIssues(w)
+			return
+		}
+		incomingPayload.HashedPassword = ""
+		successResp := SuccessResponse{
+			Message: "success",
+			Data:    incomingPayload,
+		}
+		jsonResp, err := json.Marshal(successResp)
+		if err != nil {
+			InternalIssues(w)
+			return
+		}
+
+		fmt.Fprint(w, string(jsonResp))
+		return
+
+	case http.MethodPut:
+
+		var incomingPayload User
+		err := json.NewDecoder(req.Body).Decode(&incomingPayload)
+		if err != nil {
+			InvalidJsonResp(w, err)
+			return
+		}
+
+		incomingPayload.Email = user.Email
+		incomingPayload.HashedPassword = user.HashedPassword
+		incomingPayload.IsActive = true
+		incomingPayload.DateJoined = user.DateJoined
+		incomingPayload.LastLogin = user.LastLogin
+
+		err = UpdateUser(Client, incomingPayload)
+		if err != nil {
+			InternalIssues(w)
+			return
+		}
+		incomingPayload.HashedPassword = ""
+		successResp := SuccessResponse{
+			Message: "success",
+			Data:    incomingPayload,
+		}
+		jsonResp, err := json.Marshal(successResp)
+		if err != nil {
+			InternalIssues(w)
+			return
+		}
+
+		fmt.Fprint(w, string(jsonResp))
+		return
+
+	default:
+		MethodNotAllowedResponse(w)
+	}
+}
+
+// Add User to MongoDB
 func addUser(client *mongo.Client, userDetails User) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -199,6 +321,7 @@ func addUser(client *mongo.Client, userDetails User) error {
 	return nil
 }
 
+// Retrieve User from MongoDB
 func getUser(client *mongo.Client, email string) (User, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -214,4 +337,19 @@ func getUser(client *mongo.Client, email string) (User, error) {
 		return User{}, err
 	}
 	return userDetails, nil
+}
+
+func UpdateUser(client *mongo.Client, user User) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	collection := client.Database("account").Collection("user")
+	filter := bson.M{"email": user.Email}
+	update := bson.M{"$set": user}
+	_, err := collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		log.Println("Error in updating User, ", err)
+		return err
+	}
+	return nil
 }
